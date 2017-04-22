@@ -1,7 +1,7 @@
-$labName = 'psconfeu2017_jhp'
+﻿$labName = 'psconfeu2017jhp'
 $defaultLocation = 'west europe'
 $azureContext = 'D:\Jhp.azurermsettings'
-$domainName = 'janhendrikpeters.de'
+$domainName = 'poshjhp.com'
 
 # Lab definition
 New-LabDefinition -Name $labname -DefaultVirtualizationEngine Azure
