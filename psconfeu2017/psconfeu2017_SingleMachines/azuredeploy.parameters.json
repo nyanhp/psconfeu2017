@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "singlesql1AdminLogin": {
+      "value": "jhp"
+    },
+    "singlesql1AdminLoginPassword": {
+      "value": "Somepass1"
+    },
+    "db1Name": {
+      "value": "db1"
+    },
+    "VM1Name": {
+      "value": "VM1"
+    },
+    "VM1AdminUserName": {
+      "value": "jhp"
+    },
+    "VM1AdminPassword": {
+      "value": "Somepass1"
+    },
+    "VM2Name": {
+      "value": "VM2"
+    },
+    "VM2AdminUserName": {
+      "value": "jhp"
+    },
+    "VM2AdminPassword": {
+      "value": "Somepass1"
+    }
+  }
+}
