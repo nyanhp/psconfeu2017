@@ -508,7 +508,7 @@ configuration PullClientOsAgnostic
         {
             ServerURL = 'https://xpull1:8080/PDSCPullService.svc'
             RegistrationKey = $RegistrationKey
-            ConfigurationNames = "$($Node)_BaseLine", "$($Node)_Individual"
+            ConfigurationNames = "$($Node.NodeName)_BaseLine"
         }
     }
 }
