@@ -454,6 +454,9 @@ Set-Item WSMan:\localhost\Client\TrustedHosts * -Force -Confirm:$false
 #endregion
 
 #region Sessions
+
+#https://github.com/PowerShell/Win32-OpenSSH/wiki/Install-Win32-OpenSSH
+
 $Sessions = @(New-PSSession -ComputerName Centos1 -Credential $Credential)
 $Sessions += New-PSSession -ComputerName xDC11, xDC12, xPull1 -Credential $DomainCredential
 
@@ -477,6 +480,8 @@ Get-NetworkStatistics -ShowHostnames -Port 22
 #endregion
 
 #region DSC
+
+# Install configs
 
 # LCM Meta
 [DscLocalConfigurationManager()]
@@ -503,104 +508,38 @@ configuration PullClientOsAgnostic
         {
             ServerURL = 'https://xpull1:8080/PDSCPullService.svc'
             RegistrationKey = $RegistrationKey
-            ConfigurationNames = "$($ComputerName)_BaseLine", "$($ComputerName)_Individual"
+            ConfigurationNames = "$($Node)_BaseLine", "$($Node)_Individual"
         }
     }
 }
 
 configuration webServerConfigOsAgnostic
 {
-    Write-Verbose -Message 'Before module import'
-    if ($AllNodes.Where({$_.OS -eq 'Linux'}).Count -ge 1)
-    {
+param
+(
+    [string[]]
+    $ComputerName
+)
         Import-DscResource -ModuleName nx
-    }
 
     Write-Verbose -Message 'After module import'
-    node $AllNodes.Where({$_.OS -eq 'Linux'}).NodeName
+    node $ComputerName
     {
-        $i = 0
-        foreach($folder in $Node.Folders)
-        {
-            nxFile folder$i
+            nxFile "folder"
             {
-                DestinationPath = $folder
+                DestinationPath = '/opt/folder1'
                 Type = 'Directory'
-            }
-            $i++
-        }
-
-        $i = 0
-        foreach($daemon in $Node.Daemons)
-        {
-            nxService service$i
-            {
-                Name = $daemon
-                Controller = 'systemd'
-                Enabled = $true
-                State = 'Running'
-            }
-            $i++
-        }
-    }
-
-    node $AllNodes.Where({$_.OS -eq 'Windows'}).NodeName
-    {
-        $i = 0
-        foreach($Folder in $Node.Folders)
-        {
-            File folder$i
-            {
-                DestinationPath = $Folder
-                Type = 'Directory'
-            }
-            $i++
-        }
-
-        $i = 0
-        foreach($Feature in $Node.Features)
-        {
-            WindowsFeature feature$i
-            {
-                Name = $Feature
                 Ensure = 'Present'
-                IncludeAllSubFeature = $true
+                Force = $true
             }
-            $i++
-        }
     }
 }
 
-$configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = '*'
-            PSDSCAllowPlaintextPassword = $true
-        }
-        @{
-            NodeName = 'Centos1'
-            OS = 'Linux'
-            Folders = @(
-                '\var\www\site1data'
-                '\var\www\site2data'
-            )
-            Daemons = @('sshd', 'apache2', '')
-        }
-        @{
-            NodeName = @('xDC11', 'xDC12')
-            OS = 'Windows'
-            Folders = @(
-                'C:\inetpub\site1data'
-                'C:\inetpub\site2data'
-            )
-            Features = @(
-                'Web-Server'
-            )
-        }
-    )
-}
+PullClientOsAgnostic -ComputerName Centos1,xCASQL1 -RegistrationKey 86667f10-f8c7-4852-bc59-3be766c25981
+webServerConfigOsAgnostic -ComputerName Centos1,Centos2 -Verbose
 
-PullClientOsAgnostic -ComputerName Centos1,xDC11,xDC12 -RegistrationKey abc
-webServerConfigOsAgnostic -ConfigurationData $configurationData -Verbose
+$Session = New-CimSession Centos1 -Credential $Credential -Authentication Basic
 
+Set-DscLocalConfigurationManager -Path .\PullClientOsAgnostic -CimSession $Session -Verbose
+Start-DscConfiguration -Wait -Verbose -Path .\webServerConfigOsAgnostic -CimSession $Session -Force
 #endregion
