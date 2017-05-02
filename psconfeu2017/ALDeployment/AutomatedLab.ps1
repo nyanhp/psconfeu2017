@@ -30,14 +30,14 @@ $postInstallActivity += Get-LabPostInstallationActivity -ScriptFileName 'New-ADL
 $roles = @()
 $roles += Get-LabMachineRoleDefinition -Role RootDC
 #$roles += Get-LabMachineRoleDefinition -Role CaRoot
-Add-LabMachineDefinition -Name 'jhp-dc01' -MinMemory 1GB -Roles $roles -AzureProperties @{RoleSize = "Standard_A2"}
+Add-LabMachineDefinition -Name 'poshconf-dc01' -MinMemory 1GB -Roles $roles -AzureProperties @{RoleSize = "Standard_D2"}
 
 # Add a SQL 2014 server
 $role = Get-LabMachineRoleDefinition -Role SQLServer2014
-Add-LabMachineDefinition -Name 'jhp-sql01' -MinMemory 1GB  -Roles $role -AzureProperties @{RoleSize = "Standard_A2"}
+Add-LabMachineDefinition -Name 'poshconf-sql01' -MinMemory 1GB  -Roles $role -AzureProperties @{RoleSize = "Standard_D2"}
 
 # Add a simple web server
-Add-LabMachineDefinition -Name 'jhp-web01' -Roles 'WebServer' -AzureProperties @{RoleSize = "Standard_A2"}
+Add-LabMachineDefinition -Name 'poshconf-web01' -Roles 'WebServer' -AzureProperties @{RoleSize = "Standard_D2"}
 
 Install-Lab
 
