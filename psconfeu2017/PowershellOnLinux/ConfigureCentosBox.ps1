@@ -515,31 +515,78 @@ configuration PullClientOsAgnostic
 
 configuration webServerConfigOsAgnostic
 {
-    param
-    (
-        [string[]]
-        $ComputerName
-    )
     Import-DscResource -ModuleName nx
 
     Write-Verbose -Message 'After module import'
-    node $ComputerName
+    node $AllNodes.Where({$_.OS -eq 'Linux'}).NodeName
     {
-        nxFile "folder"
+        nxFile "homefolder"
         {
-            DestinationPath = '/opt/folder1'
+            DestinationPath = '/home/localuser1'
             Type = 'Directory'
             Ensure = 'Present'
-            Force = $true
+        }
+
+        nxUser user
+        {
+            UserName = 'localuser1'
+            Password = $ConfigurationData.NonNodeData.UnixNewUserPassword
+            HomeDirectory = '/home/localuser1'
+            DependsOn = '[nxFile]homefolder'
+        }
+    }
+
+    node $AllNodes.Where({$_.OS -eq 'Windows'}).NodeName
+    {
+        File "folder"
+        {
+            DestinationPath = "C:\folder1"
+            Type = 'Directory'
+            Ensure = "Present"
+        }
+
+        Service sampleService
+        {
+            Credential = $ConfigurationData.NonNodeData.WindowsCredential
+            Name = "MySampleService"
+            State = 'Stopped'
+            StartupType = 'Disabled'
+            Path = 'C:\Windows\notepad.exe'
         }
     }
 }
 
+$confData = @{
+    AllNodes = @(
+        @{
+            NodeName = '*'
+            PSDSCAllowPlaintextPassword = $true
+        }
+        @{
+            NodeName = 'Centos1'
+            OS = 'Linux'
+        }
+        @{
+            NodeName = 'xCASQL1'
+            OS = 'Windows'
+        }
+    )
+    NonNodeData = @{
+        UnixCredential = New-Object pscredential('root','Somepass1' | ConvertTo-SecureString -Force -AsPlainText)
+        UnixNewUserPassword = '$6$KY2mVySoxgvrzXB8$jOHQvJPGiEx6QT.ia1jceYsji/0d9.UZZuUBJWZQZ8xSHrX3JOcWrt3KPzRyCBFJn.pSs8Srzi5uCQEFWqzf//'
+        WindowsCredential = New-Object pscredential('install','Somepass1' | ConvertTo-SecureString -Force -AsPlainText)
+    }
+}
+
 PullClientOsAgnostic -ComputerName Centos1, xCASQL1 -RegistrationKey 86667f10-f8c7-4852-bc59-3be766c25981
-webServerConfigOsAgnostic -ComputerName Centos1, Centos2 -Verbose
+webServerConfigOsAgnostic -ConfigurationData $confData -Verbose
 
-$Session = New-CimSession Centos1 -Credential $Credential -Authentication Basic
+$Sessions = @()
+$Sessions += New-CimSession Centos1 -Credential $Credential -Authentication Basic
+$Sessions += New-CimSession xCASQL1 -Credential $DomainCredential
 
-Set-DscLocalConfigurationManager -Path .\PullClientOsAgnostic -CimSession $Session -Verbose
-Start-DscConfiguration -Wait -Verbose -Path .\webServerConfigOsAgnostic -CimSession $Session -Force
+Set-DscLocalConfigurationManager -Path .\PullClientOsAgnostic -CimSession $Sessions -Verbose
+Start-DscConfiguration -Wait -Verbose -Path .\webServerConfigOsAgnostic -CimSession $Sessions -Force
+
+Update-DscConfiguration -CimSession $Session -Wait -Verbose
 #endregion
