@@ -431,7 +431,7 @@ if (-not (Get-Module -ListAvailable -Name Posh-SSH))
 
 $Credential = Get-Credential -UserName 'root' -Message "Root credentials"
 $DomainCredential = Get-Credential -UserName 'install' -Message "Domain user credentials"
-$Session = New-SSHSession -ComputerName 192.168.2.71 -Credential $Credential
+$Session = New-SSHSession -ComputerName Centos1 -Credential $Credential
 
 Invoke-SSHCommand -SSHSession $Session -Command "curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo"
 
@@ -515,28 +515,28 @@ configuration PullClientOsAgnostic
 
 configuration webServerConfigOsAgnostic
 {
-param
-(
-    [string[]]
-    $ComputerName
-)
-        Import-DscResource -ModuleName nx
+    param
+    (
+        [string[]]
+        $ComputerName
+    )
+    Import-DscResource -ModuleName nx
 
     Write-Verbose -Message 'After module import'
     node $ComputerName
     {
-            nxFile "folder"
-            {
-                DestinationPath = '/opt/folder1'
-                Type = 'Directory'
-                Ensure = 'Present'
-                Force = $true
-            }
+        nxFile "folder"
+        {
+            DestinationPath = '/opt/folder1'
+            Type = 'Directory'
+            Ensure = 'Present'
+            Force = $true
+        }
     }
 }
 
-PullClientOsAgnostic -ComputerName Centos1,xCASQL1 -RegistrationKey 86667f10-f8c7-4852-bc59-3be766c25981
-webServerConfigOsAgnostic -ComputerName Centos1,Centos2 -Verbose
+PullClientOsAgnostic -ComputerName Centos1, xCASQL1 -RegistrationKey 86667f10-f8c7-4852-bc59-3be766c25981
+webServerConfigOsAgnostic -ComputerName Centos1, Centos2 -Verbose
 
 $Session = New-CimSession Centos1 -Credential $Credential -Authentication Basic
 
